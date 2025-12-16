@@ -27,6 +27,7 @@ func New() *Server {
 		addr := sess.Conn().RemoteAddr().String()
 		log.Printf("client disconnected: %s", addr)
 		services.RemoveSession(sess)
+		services.RemoveSessionFromAllRooms(sess)
 	}
 
 	registerRoutes(srv)
@@ -52,4 +53,7 @@ func registerRoutes(s *easytcp.Server) {
 	// Route 201: create room.
 	// Route 210: list rooms.
 	routes.RegisterRoomRoutes(s)
+
+	// Route 301: post message to Supabase.
+	routes.RegisterMessageRoutes(s)
 }
