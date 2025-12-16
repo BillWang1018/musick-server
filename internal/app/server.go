@@ -50,5 +50,6 @@ func registerRoutes(s *easytcp.Server) {
 	routes.RegisterAuthRoutes(s)
 
 	// Route 201: create room.
+	// Route 210: list rooms.
 	routes.RegisterRoomRoutes(s)
 }

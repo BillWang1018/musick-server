@@ -10,15 +10,15 @@ import (
 )
 
 var (
-	supabaseURL     string
-	supabaseAnonKey string
-	envOnce         sync.Once
+	supabaseURL    string
+	supabaseAPIKey string
+	envOnce        sync.Once
 )
 
 func loadEnv() {
 	envOnce.Do(func() {
 		supabaseURL = os.Getenv("SUPABASE_URL")
-		supabaseAnonKey = os.Getenv("SUPABASE_ANON_KEY")
+		supabaseAPIKey = os.Getenv("SUPABASE_API_KEY")
 	})
 }
 
@@ -45,7 +45,7 @@ func VerifyToken(token string) (*SupabaseUser, error) {
 
 	req, _ := http.NewRequest("GET", supabaseURL+"/auth/v1/user", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("apikey", supabaseAnonKey)
+	req.Header.Set("apikey", supabaseAPIKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

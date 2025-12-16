@@ -1,6 +1,6 @@
 # Musick Server
 
-A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/easytcp) for real-time messaging with Flutter clients.
+A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/easytcp) for real-time messaging with Flutter clients. Uses Supabase for authentication (JWT validation) and data persistence (rooms, memberships, messages).
 
 ## Project Structure
 
@@ -15,11 +15,13 @@ musick-server/
     └── app/
         ├── server.go           # Server initialization & route registration
         ├── routes/             # Message route handlers
-        │   ├── auth.go         # Authentication routes (login, etc.)
+        │   ├── auth.go         # Authentication routes (Supabase JWT)
+        │   ├── room.go         # Room creation (Supabase RPC)
         │   └── echo.go         # Echo test route
         └── services/           # Business logic & external integrations
             ├── session.go      # Session management (user state)
-            └── tokenauth.go    # Supabase token verification
+            ├── tokenauth.go    # Supabase token verification (JWT)
+            └── room.go         # Supabase room creation helper
 ```
 
 ## Entry Point
@@ -167,8 +169,8 @@ Uses easytcp `DefaultPacker`:
 └─────────────┴─────────────┴──────────────────┘
 ```
 
-- **dataSize**: length of `data` field (big-endian)
-- **id**: route/message type (big-endian)
+- **dataSize**: length of `data` field (little-endian)
+- **id**: route/message type (little-endian)
 - **data**: payload (JSON, raw bytes, etc.)
 
 ## Route IDs
@@ -176,5 +178,7 @@ Uses easytcp `DefaultPacker`:
 Current routes:
 - `1`: Echo (test)
 - `10`: Login (authentication)
+- `201`: Create room
+- `210`: Fetch room for user
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).

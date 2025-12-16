@@ -24,8 +24,19 @@ type CreateRoomResponse struct {
 	IsPrivate bool   `json:"is_private,omitempty"`
 }
 
+type ListRoomsRequest struct {
+	UserID string `json:"user_id"`
+}
+
+type ListRoomsResponse struct {
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Rooms   []services.Room `json:"rooms,omitempty"`
+}
+
 func RegisterRoomRoutes(s *easytcp.Server) {
 	s.AddRoute(201, handleCreateRoom)
+	s.AddRoute(210, handleListRooms)
 }
 
 func handleCreateRoom(ctx easytcp.Context) {
@@ -86,6 +97,54 @@ func handleCreateRoom(ctx easytcp.Context) {
 
 func sendRoomError(ctx easytcp.Context, msg string) {
 	resp := CreateRoomResponse{Success: false, Message: msg}
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
+}
+
+func handleListRooms(ctx easytcp.Context) {
+	req := ctx.Request()
+
+	if !services.IsAuthenticated(ctx.Session()) {
+		sendListRoomsError(ctx, "not authenticated")
+		return
+	}
+
+	var listReq ListRoomsRequest
+	if err := json.Unmarshal(req.Data(), &listReq); err != nil {
+		sendListRoomsError(ctx, "invalid request format")
+		return
+	}
+
+	if listReq.UserID == "" {
+		sendListRoomsError(ctx, "user_id is required")
+		return
+	}
+
+	userSession := services.GetSession(ctx.Session())
+	if userSession == nil || userSession.UserID != listReq.UserID {
+		sendListRoomsError(ctx, "user_id mismatch")
+		return
+	}
+
+	rooms, err := services.ListRoomsByUser(listReq.UserID)
+	if err != nil {
+		log.Printf("failed to list rooms: %v", err)
+		sendListRoomsError(ctx, "failed to list rooms")
+		return
+	}
+
+	resp := ListRoomsResponse{
+		Success: true,
+		Message: "rooms fetched",
+		Rooms:   rooms,
+	}
+
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(req.ID(), data))
+}
+
+func sendListRoomsError(ctx easytcp.Context, msg string) {
+	resp := ListRoomsResponse{Success: false, Message: msg}
 	data, _ := json.Marshal(resp)
 	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
 }
