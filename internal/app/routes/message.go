@@ -154,6 +154,9 @@ func handleFetchMessages(ctx easytcp.Context) {
 		return
 	}
 
+	// Track this session in the room so broadcast (302) messages reach it.
+	services.AddSessionToRoom(fmReq.RoomID, ctx.Session())
+
 	if fmReq.Limit == 0 {
 		fmReq.Limit = 50
 	}
