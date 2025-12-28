@@ -2,10 +2,6 @@
 
 A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/easytcp) for real-time messaging with Flutter clients. Uses Supabase for authentication (JWT validation) and data persistence (rooms, memberships, messages).
 
-## Recent updates
-
-- Message fetch (310) now auto-subscribes the session to the room so 302 broadcasts reach the requester without an explicit join call.
-
 ## Project Structure
 
 ```
@@ -20,17 +16,12 @@ musick-server/
         ├── server.go           # Server initialization & route registration
         ├── routes/             # Message route handlers
         │   ├── auth.go         # Authentication routes (Supabase JWT)
-        │   ├── echo.go         # Echo test route
-        │   ├── room.go         # Room creation/listing
-        │   ├── join_room.go    # Join a room by code (adds broadcast subscription)
-        │   └── message.go      # Send/fetch messages, broadcast to room
+        │   ├── room.go         # Room creation (Supabase RPC)
+        │   └── echo.go         # Echo test route
         └── services/           # Business logic & external integrations
             ├── session.go      # Session management (user state)
-            ├── roomsubs.go     # Room subscription tracking for broadcasts
             ├── tokenauth.go    # Supabase token verification (JWT)
-            ├── room.go         # Supabase room creation helper
-            ├── join_room.go    # Supabase room lookup/join helper
-            └── message.go      # Supabase message CRUD helpers
+            └── room.go         # Supabase room creation helper
 ```
 
 ## Entry Point
@@ -77,11 +68,9 @@ The `registerRoutes()` function imports and calls registrars from the `routes/` 
 
 ```go
 func registerRoutes(s *easytcp.Server) {
-    routes.RegisterEchoRoutes(s)    // 1
-    routes.RegisterAuthRoutes(s)    // 10
-    routes.RegisterRoomRoutes(s)    // 201, 210
-    routes.RegisterJoinRoomRoutes(s) // 202
-    routes.RegisterMessageRoutes(s) // 301, 302, 310
+    routes.RegisterEchoRoutes(s)   // Test echo handler
+    routes.RegisterAuthRoutes(s)   // Login/auth handlers
+    // Add more route groups here...
 }
 ```
 
@@ -190,10 +179,6 @@ Current routes:
 - `1`: Echo (test)
 - `10`: Login (authentication)
 - `201`: Create room
-- `202`: Join room by code (adds session to room subscription map)
-- `210`: List rooms for authenticated user
-- `301`: Send message (persists to Supabase, broadcasts on 302)
-- `302`: Broadcasted message delivery to room subscribers
-- `310`: Fetch messages (auto-subscribes session to room for broadcasts)
+- `210`: Fetch room for user
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).

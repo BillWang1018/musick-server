@@ -59,4 +59,6 @@ func registerRoutes(s *easytcp.Server) {
 
 	// Route 301: post message to Supabase.
 	routes.RegisterMessageRoutes(s)
+
+	routes.RegisterShazamRoutes(s)
 }
