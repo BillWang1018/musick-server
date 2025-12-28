@@ -59,4 +59,13 @@ func registerRoutes(s *easytcp.Server) {
 
 	// Route 301: post message to Supabase.
 	routes.RegisterMessageRoutes(s)
+
+	// Route 501: create song; 510: list songs; 511: update song.
+	routes.RegisterSongRoutes(s)
+
+	// Route 601: create note; 602: delete note; 603: broadcast note updates; 610: list notes.
+	routes.RegisterNoteRoutes(s)
+
+	// Route 604: create track; 605: delete track; 606: broadcast track updates.
+	routes.RegisterTrackRoutes(s)
 }

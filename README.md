@@ -5,6 +5,9 @@ A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/e
 ## Recent updates
 
 - Message fetch (310) now auto-subscribes the session to the room so 302 broadcasts reach the requester without an explicit join call.
+- Added song endpoints: 501 create song, 510 list songs for a room.
+- Added note endpoints: 601 create note, 602 delete note, 603 broadcast note changes to room collaborators, 610 list notes for a song.
+- Added track endpoints: 604 create track, 605 delete track, 606 broadcast track changes.
 
 ## Project Structure
 
@@ -23,14 +26,19 @@ musick-server/
         │   ├── echo.go         # Echo test route
         │   ├── room.go         # Room creation/listing
         │   ├── join_room.go    # Join a room by code (adds broadcast subscription)
-        │   └── message.go      # Send/fetch messages, broadcast to room
+        │   ├── message.go      # Send/fetch messages, broadcast to room
+        │   ├── song.go         # Create/list songs in a room (501, 510)
+        │   ├── note.go         # Create/delete/broadcast/list notes in a room (601, 602, 603, 610)
+        │   └── track.go        # Create/delete/broadcast tracks (604, 605, 606)
         └── services/           # Business logic & external integrations
             ├── session.go      # Session management (user state)
             ├── roomsubs.go     # Room subscription tracking for broadcasts
             ├── tokenauth.go    # Supabase token verification (JWT)
             ├── room.go         # Supabase room creation helper
             ├── join_room.go    # Supabase room lookup/join helper
-            └── message.go      # Supabase message CRUD helpers
+            ├── message.go      # Supabase message CRUD helpers
+            ├── song.go         # Supabase song CRUD helpers
+            └── note.go         # Supabase note CRUD helpers
 ```
 
 ## Entry Point
@@ -82,6 +90,9 @@ func registerRoutes(s *easytcp.Server) {
     routes.RegisterRoomRoutes(s)    // 201, 210
     routes.RegisterJoinRoomRoutes(s) // 202
     routes.RegisterMessageRoutes(s) // 301, 302, 310
+    routes.RegisterSongRoutes(s)    // 501 create song, 510 list songs, 511 update song
+    routes.RegisterNoteRoutes(s)    // 601 create note, 602 delete note, 603 broadcast note, 610 list notes
+    routes.RegisterTrackRoutes(s)   // 604 create track, 605 delete track, 606 broadcast track
 }
 ```
 
@@ -195,5 +206,15 @@ Current routes:
 - `301`: Send message (persists to Supabase, broadcasts on 302)
 - `302`: Broadcasted message delivery to room subscribers
 - `310`: Fetch messages (auto-subscribes session to room for broadcasts)
+- `501`: Create song
+- `510`: List songs for a room
+- `511`: Update song (title/bpm/steps)
+- `601`: Create note
+- `602`: Delete note
+- `603`: Broadcast note to room subscribers
+- `610`: List notes for a song
+- `604`: Create track
+- `605`: Delete track
+- `606`: Broadcast track updates
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).
