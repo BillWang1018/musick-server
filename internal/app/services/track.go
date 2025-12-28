@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -100,4 +101,41 @@ func DeleteTrack(trackID, songID string) error {
 	}
 
 	return nil
+}
+
+// ListTracksBySong returns all tracks for a song ordered by created_at.
+func ListTracksBySong(songID string) ([]Track, error) {
+	loadEnv()
+
+	if songID == "" {
+		return nil, fmt.Errorf("song_id is required")
+	}
+
+	q := url.Values{}
+	q.Set("song_id", "eq."+songID)
+	q.Set("select", "id,song_id,name,instrument,channel,color,created_at")
+	q.Set("order", "created_at.asc")
+
+	endpoint := fmt.Sprintf("%s/rest/v1/tracks?%s", supabaseURL, q.Encode())
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	req.Header.Set("Authorization", "Bearer "+supabaseAPIKey)
+	req.Header.Set("apikey", supabaseAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch tracks: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("fetch tracks failed (status %d): %s", resp.StatusCode, respBody)
+	}
+
+	var tracks []Track
+	if err := json.NewDecoder(resp.Body).Decode(&tracks); err != nil {
+		return nil, fmt.Errorf("decode tracks: %w", err)
+	}
+
+	return tracks, nil
 }

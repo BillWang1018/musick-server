@@ -48,9 +48,10 @@ type ListNotesRequest struct {
 }
 
 type ListNotesResponse struct {
-	Success bool            `json:"success"`
-	Message string          `json:"message"`
-	Notes   []services.Note `json:"notes,omitempty"`
+	Success bool             `json:"success"`
+	Message string           `json:"message"`
+	Notes   []services.Note  `json:"notes,omitempty"`
+	Tracks  []services.Track `json:"tracks,omitempty"`
 }
 
 // NoteBroadcast is the unified payload for route 603 broadcasts.
@@ -237,6 +238,13 @@ func handleListNotes(ctx easytcp.Context) {
 		return
 	}
 
+	tracks, err := services.ListTracksBySong(lnReq.SongID)
+	if err != nil {
+		log.Printf("failed to list tracks: %v", err)
+		sendListNotesError(ctx, "failed to list tracks")
+		return
+	}
+
 	// Track membership for future broadcasts.
 	services.AddSessionToRoom(lnReq.RoomID, ctx.Session())
 
@@ -244,6 +252,7 @@ func handleListNotes(ctx easytcp.Context) {
 		Success: true,
 		Message: "notes fetched",
 		Notes:   notes,
+		Tracks:  tracks,
 	}
 
 	data, _ := json.Marshal(resp)
