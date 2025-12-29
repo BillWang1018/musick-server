@@ -7,18 +7,23 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
 // Song represents a song tied to a room.
 type Song struct {
-	ID        string    `json:"id"`
-	RoomID    string    `json:"room_id"`
-	Title     string    `json:"title"`
-	BPM       int       `json:"bpm"`
-	Steps     int       `json:"steps"`
-	CreatedBy string    `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	RoomID          string    `json:"room_id"`
+	Title           string    `json:"title"`
+	BPM             int       `json:"bpm"`
+	Steps           int       `json:"steps"`
+	BeatsPerMeasure int       `json:"beats_per_measure"`
+	Scale           string    `json:"scale"`
+	StartPitch      int       `json:"start_pitch"`
+	OctaveRange     int       `json:"octave_range"`
+	CreatedBy       string    `json:"created_by"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // ListSongsByRoom fetches songs for a given room from Supabase.
@@ -26,7 +31,7 @@ func ListSongsByRoom(roomID string) ([]Song, error) {
 	loadEnv()
 
 	q := url.Values{}
-	q.Set("select", "id,room_id,title,bpm,steps,created_by,created_at")
+	q.Set("select", "id,room_id,title,bpm,steps,beats_per_measure,scale,start_pitch,octave_range,created_by,created_at")
 	q.Set("room_id", "eq."+roomID)
 	q.Set("order", "created_at.asc")
 
@@ -108,7 +113,7 @@ func CreateSong(roomID, title string, bpm, steps int, userID string) (*Song, err
 }
 
 // UpdateSong updates song metadata and returns the updated row.
-func UpdateSong(songID string, title *string, bpm *int, steps *int) (*Song, error) {
+func UpdateSong(songID string, title *string, bpm *int, steps *int, beatsPerMeasure *int, scale *string, startPitch *int, octaveRange *int) (*Song, error) {
 	loadEnv()
 
 	if songID == "" {
@@ -136,6 +141,35 @@ func UpdateSong(songID string, title *string, bpm *int, steps *int) (*Song, erro
 			return nil, fmt.Errorf("steps must be positive")
 		}
 		payload["steps"] = *steps
+	}
+
+	if beatsPerMeasure != nil {
+		if *beatsPerMeasure <= 0 {
+			return nil, fmt.Errorf("beats_per_measure must be positive")
+		}
+		payload["beats_per_measure"] = *beatsPerMeasure
+	}
+
+	if scale != nil {
+		val := strings.ToLower(strings.TrimSpace(*scale))
+		if val != "major" && val != "minor" {
+			return nil, fmt.Errorf("scale must be 'major' or 'minor'")
+		}
+		payload["scale"] = val
+	}
+
+	if startPitch != nil {
+		if *startPitch < 0 || *startPitch > 127 {
+			return nil, fmt.Errorf("start_pitch must be between 0 and 127")
+		}
+		payload["start_pitch"] = *startPitch
+	}
+
+	if octaveRange != nil {
+		if *octaveRange <= 0 {
+			return nil, fmt.Errorf("octave_range must be positive")
+		}
+		payload["octave_range"] = *octaveRange
 	}
 
 	if len(payload) == 0 {

@@ -35,12 +35,16 @@ type CreateSongResponse struct {
 }
 
 type UpdateSongRequest struct {
-	UserID string  `json:"user_id"`
-	RoomID string  `json:"room_id"`
-	SongID string  `json:"song_id"`
-	Title  *string `json:"title,omitempty"`
-	BPM    *int    `json:"bpm,omitempty"`
-	Steps  *int    `json:"steps,omitempty"`
+	UserID          string  `json:"user_id"`
+	RoomID          string  `json:"room_id"`
+	SongID          string  `json:"song_id"`
+	Title           *string `json:"title,omitempty"`
+	BPM             *int    `json:"bpm,omitempty"`
+	Steps           *int    `json:"steps,omitempty"`
+	BeatsPerMeasure *int    `json:"beats_per_measure,omitempty"`
+	Scale           *string `json:"scale,omitempty"`
+	StartPitch      *int    `json:"start_pitch,omitempty"`
+	OctaveRange     *int    `json:"octave_range,omitempty"`
 }
 
 type UpdateSongResponse struct {
@@ -174,7 +178,7 @@ func handleUpdateSong(ctx easytcp.Context) {
 		return
 	}
 
-	if upReq.Title == nil && upReq.BPM == nil && upReq.Steps == nil {
+	if upReq.Title == nil && upReq.BPM == nil && upReq.Steps == nil && upReq.BeatsPerMeasure == nil && upReq.Scale == nil && upReq.StartPitch == nil && upReq.OctaveRange == nil {
 		sendSongUpdateError(ctx, "no fields to update")
 		return
 	}
@@ -185,7 +189,7 @@ func handleUpdateSong(ctx easytcp.Context) {
 		return
 	}
 
-	updated, err := services.UpdateSong(upReq.SongID, upReq.Title, upReq.BPM, upReq.Steps)
+	updated, err := services.UpdateSong(upReq.SongID, upReq.Title, upReq.BPM, upReq.Steps, upReq.BeatsPerMeasure, upReq.Scale, upReq.StartPitch, upReq.OctaveRange)
 	if err != nil {
 		log.Printf("failed to update song: %v", err)
 		sendSongUpdateError(ctx, "failed to update song")
