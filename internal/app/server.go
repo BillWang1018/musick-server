@@ -69,4 +69,7 @@ func registerRoutes(s *easytcp.Server) {
 
 	// Route 604: create track; 605: delete track; 606: broadcast track updates.
 	routes.RegisterTrackRoutes(s)
+
+	// Route 701: create post; 702: delete post; 710: list posts; 711: update post.
+	routes.RegisterCommunityRoutes(s)
 }

@@ -221,6 +221,7 @@ Current routes:
 - `606`: Broadcast track updates
 - `701`: Create community post
 - `702`: Delete community post
+- `710`: List community posts
 - `711`: Update community post
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).
