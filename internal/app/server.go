@@ -54,8 +54,24 @@ func (s *Server) Run(addr string) error {
 func registerRoutes(s *easytcp.Server) {
 	routes.RegisterEchoRoutes(s)
 	routes.RegisterAuthRoutes(s)
+
+	// Route 201: create room.
+	// Route 210: list rooms.
+	// Route 211: find public rooms.
 	routes.RegisterRoomRoutes(s)
 	routes.RegisterJoinRoomRoutes(s)
 	routes.RegisterMessageRoutes(s)
+
+	// Route 501: create song; 510: list songs; 511: update song.
+	routes.RegisterSongRoutes(s)
+
+	// Route 601: create note; 602: delete note; 603: broadcast note updates; 610: list notes.
+	routes.RegisterNoteRoutes(s)
+
+	// Route 604: create track; 605: delete track; 606: broadcast track updates.
+	routes.RegisterTrackRoutes(s)
+
+	// Route 701: create post; 702: delete post; 710: list posts; 711: update post.
+	routes.RegisterCommunityRoutes(s)
 	routes.RegisterShazamRoutes(s)
 }

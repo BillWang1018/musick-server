@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -114,6 +115,88 @@ func ListRoomsByUser(userID string) ([]Room, error) {
 			IsPrivate: r.IsPrivate,
 			CreatedAt: r.CreatedAt,
 		})
+	}
+
+	return rooms, nil
+}
+
+// FindPublicRooms returns public rooms filtered by title if provided.
+// When no title is provided, it fetches a set of recent public rooms and picks up to five at random.
+// Rooms the user is already a member of are excluded client-side after fetch.
+func FindPublicRooms(name string, userID string) ([]Room, error) {
+	loadEnv()
+
+	joined, err := ListRoomsByUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user rooms: %w", err)
+	}
+	joinedIDs := make(map[string]struct{}, len(joined))
+	for _, r := range joined {
+		joinedIDs[r.ID] = struct{}{}
+	}
+
+	q := url.Values{}
+	q.Set("select", "id,code,owner_id,title,is_private,created_at")
+	q.Set("is_private", "eq.false")
+
+	if name != "" {
+		q.Set("title", "ilike.*"+name+"*")
+		q.Set("order", "created_at.desc")
+		q.Set("limit", "20")
+	} else {
+		q.Set("order", "created_at.desc")
+		q.Set("limit", "30")
+	}
+
+	endpoint := fmt.Sprintf("%s/rest/v1/rooms?%s", supabaseURL, q.Encode())
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	req.Header.Set("Authorization", "Bearer "+supabaseAPIKey)
+	req.Header.Set("apikey", supabaseAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search public rooms: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("search public rooms failed (status %d): %s", resp.StatusCode, body)
+	}
+
+	var rows []struct {
+		ID        string    `json:"id"`
+		Code      string    `json:"code"`
+		OwnerID   string    `json:"owner_id"`
+		Title     string    `json:"title"`
+		IsPrivate bool      `json:"is_private"`
+		CreatedAt time.Time `json:"created_at"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
+		return nil, fmt.Errorf("failed to decode public rooms: %w", err)
+	}
+
+	rooms := make([]Room, 0, len(rows))
+	for _, r := range rows {
+		if _, exists := joinedIDs[r.ID]; exists {
+			continue
+		}
+		rooms = append(rooms, Room{
+			ID:        r.ID,
+			Code:      r.Code,
+			OwnerID:   r.OwnerID,
+			Title:     r.Title,
+			IsPrivate: r.IsPrivate,
+			CreatedAt: r.CreatedAt,
+		})
+	}
+
+	if name == "" && len(rooms) > 5 {
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(rooms), func(i, j int) {
+			rooms[i], rooms[j] = rooms[j], rooms[i]
+		})
+		rooms = rooms[:5]
 	}
 
 	return rooms, nil

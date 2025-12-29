@@ -34,9 +34,21 @@ type ListRoomsResponse struct {
 	Rooms   []services.Room `json:"rooms,omitempty"`
 }
 
+type FindPublicRoomsRequest struct {
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
+}
+
+type FindPublicRoomsResponse struct {
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Rooms   []services.Room `json:"rooms,omitempty"`
+}
+
 func RegisterRoomRoutes(s *easytcp.Server) {
 	s.AddRoute(201, handleCreateRoom)
 	s.AddRoute(210, handleListRooms)
+	s.AddRoute(211, handleFindPublicRooms)
 }
 
 func handleCreateRoom(ctx easytcp.Context) {
@@ -145,6 +157,54 @@ func handleListRooms(ctx easytcp.Context) {
 
 func sendListRoomsError(ctx easytcp.Context, msg string) {
 	resp := ListRoomsResponse{Success: false, Message: msg}
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
+}
+
+func handleFindPublicRooms(ctx easytcp.Context) {
+	req := ctx.Request()
+
+	if !services.IsAuthenticated(ctx.Session()) {
+		sendFindPublicRoomsError(ctx, "not authenticated")
+		return
+	}
+
+	var findReq FindPublicRoomsRequest
+	if err := json.Unmarshal(req.Data(), &findReq); err != nil {
+		sendFindPublicRoomsError(ctx, "invalid request format")
+		return
+	}
+
+	if findReq.UserID == "" {
+		sendFindPublicRoomsError(ctx, "user_id is required")
+		return
+	}
+
+	session := services.GetSession(ctx.Session())
+	if session == nil || session.UserID != findReq.UserID {
+		sendFindPublicRoomsError(ctx, "user_id mismatch")
+		return
+	}
+
+	rooms, err := services.FindPublicRooms(findReq.Name, findReq.UserID)
+	if err != nil {
+		log.Printf("failed to find public rooms: %v", err)
+		sendFindPublicRoomsError(ctx, "failed to find public rooms")
+		return
+	}
+
+	resp := FindPublicRoomsResponse{
+		Success: true,
+		Message: "rooms fetched",
+		Rooms:   rooms,
+	}
+
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(req.ID(), data))
+}
+
+func sendFindPublicRoomsError(ctx easytcp.Context, msg string) {
+	resp := FindPublicRoomsResponse{Success: false, Message: msg}
 	data, _ := json.Marshal(resp)
 	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
 }

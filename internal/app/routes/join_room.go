@@ -26,8 +26,19 @@ type JoinRoomResponse struct {
 	CreatedAt string `json:"created_at,omitempty"`
 }
 
+type LeaveRoomRequest struct {
+	RoomID string `json:"room_id"`
+	UserID string `json:"user_id"`
+}
+
+type LeaveRoomResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 func RegisterJoinRoomRoutes(s *easytcp.Server) {
 	s.AddRoute(202, handleJoinRoom)
+	s.AddRoute(203, handleLeaveRoom)
 }
 
 func handleJoinRoom(ctx easytcp.Context) {
@@ -82,6 +93,50 @@ func handleJoinRoom(ctx easytcp.Context) {
 
 func sendJoinRoomError(ctx easytcp.Context, msg string) {
 	resp := JoinRoomResponse{Success: false, Message: msg}
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
+}
+
+func handleLeaveRoom(ctx easytcp.Context) {
+	req := ctx.Request()
+
+	if !services.IsAuthenticated(ctx.Session()) {
+		sendLeaveRoomError(ctx, "not authenticated")
+		return
+	}
+
+	var lr LeaveRoomRequest
+	if err := json.Unmarshal(req.Data(), &lr); err != nil {
+		sendLeaveRoomError(ctx, "invalid request format")
+		return
+	}
+
+	if lr.RoomID == "" || lr.UserID == "" {
+		sendLeaveRoomError(ctx, "room_id and user_id are required")
+		return
+	}
+
+	session := services.GetSession(ctx.Session())
+	if session == nil || session.UserID != lr.UserID {
+		sendLeaveRoomError(ctx, "user_id mismatch")
+		return
+	}
+
+	if err := services.LeaveRoom(lr.RoomID, lr.UserID); err != nil {
+		log.Printf("failed to leave room: %v", err)
+		sendLeaveRoomError(ctx, "failed to leave room")
+		return
+	}
+
+	services.RemoveSessionFromRoom(lr.RoomID, ctx.Session())
+
+	resp := LeaveRoomResponse{Success: true, Message: "left room"}
+	data, _ := json.Marshal(resp)
+	ctx.SetResponseMessage(easytcp.NewMessage(req.ID(), data))
+}
+
+func sendLeaveRoomError(ctx easytcp.Context, msg string) {
+	resp := LeaveRoomResponse{Success: false, Message: msg}
 	data, _ := json.Marshal(resp)
 	ctx.SetResponseMessage(easytcp.NewMessage(ctx.Request().ID(), data))
 }

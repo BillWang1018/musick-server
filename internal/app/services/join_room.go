@@ -80,3 +80,27 @@ func JoinRoomByCode(code, userID string) (*Room, error) {
 		CreatedAt: room.CreatedAt,
 	}, nil
 }
+
+// LeaveRoom removes a user's membership from a room.
+func LeaveRoom(roomID, userID string) error {
+	loadEnv()
+
+	endpoint := fmt.Sprintf("%s/rest/v1/room_members?room_id=eq.%s&account_id=eq.%s", supabaseURL, roomID, userID)
+	req, _ := http.NewRequest("DELETE", endpoint, nil)
+	req.Header.Set("Authorization", "Bearer "+supabaseAPIKey)
+	req.Header.Set("apikey", supabaseAPIKey)
+	req.Header.Set("Prefer", "return=minimal")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("leave room request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 204 && resp.StatusCode != 200 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("leave room failed (status %d): %s", resp.StatusCode, b)
+	}
+
+	return nil
+}

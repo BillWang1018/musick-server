@@ -2,6 +2,14 @@
 
 A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/easytcp) for real-time messaging with Flutter clients. Uses Supabase for authentication (JWT validation) and data persistence (rooms, memberships, messages).
 
+## Recent updates
+
+- Message fetch (310) now auto-subscribes the session to the room so 302 broadcasts reach the requester without an explicit join call.
+- Added song endpoints: 501 create song, 510 list songs for a room.
+- Added note endpoints: 601 create note, 602 delete note, 603 broadcast note changes to room collaborators, 610 list notes for a song.
+- Added track endpoints: 604 create track, 605 delete track, 606 broadcast track changes.
+- Song settings expanded: beats per measure, scale (major/minor), start pitch (MIDI), octave range with defaults (4/major/24/2) and updateable via route 511.
+
 ## Project Structure
 
 ```
@@ -16,12 +24,21 @@ musick-server/
         ├── server.go           # Server initialization & route registration
         ├── routes/             # Message route handlers
         │   ├── auth.go         # Authentication routes (Supabase JWT)
-        │   ├── room.go         # Room creation (Supabase RPC)
-        │   └── echo.go         # Echo test route
+        │   ├── echo.go         # Echo test route
+        │   ├── room.go         # Room creation/listing
+        │   ├── join_room.go    # Join a room by code (adds broadcast subscription)
+        │   ├── message.go      # Send/fetch messages, broadcast to room
+        │   ├── song.go         # Create/list songs in a room (501, 510)
+        │   ├── note.go         # Create/delete/broadcast/list notes in a room (601, 602, 603, 610)
+        │   └── track.go        # Create/delete/broadcast tracks (604, 605, 606)
         └── services/           # Business logic & external integrations
             ├── session.go      # Session management (user state)
             ├── tokenauth.go    # Supabase token verification (JWT)
-            └── room.go         # Supabase room creation helper
+            ├── room.go         # Supabase room creation helper
+            ├── join_room.go    # Supabase room lookup/join helper
+            ├── message.go      # Supabase message CRUD helpers
+            ├── song.go         # Supabase song CRUD helpers
+            └── note.go         # Supabase note CRUD helpers
 ```
 
 ## Entry Point
@@ -68,9 +85,14 @@ The `registerRoutes()` function imports and calls registrars from the `routes/` 
 
 ```go
 func registerRoutes(s *easytcp.Server) {
-    routes.RegisterEchoRoutes(s)   // Test echo handler
-    routes.RegisterAuthRoutes(s)   // Login/auth handlers
-    // Add more route groups here...
+    routes.RegisterEchoRoutes(s)    // 1
+    routes.RegisterAuthRoutes(s)    // 10
+    routes.RegisterRoomRoutes(s)    // 201, 210
+    routes.RegisterJoinRoomRoutes(s) // 202
+    routes.RegisterMessageRoutes(s) // 301, 302, 310
+    routes.RegisterSongRoutes(s)    // 501 create song, 510 list songs, 511 update song
+    routes.RegisterNoteRoutes(s)    // 601 create note, 602 delete note, 603 broadcast note, 610 list notes
+    routes.RegisterTrackRoutes(s)   // 604 create track, 605 delete track, 606 broadcast track
 }
 ```
 
@@ -179,6 +201,26 @@ Current routes:
 - `1`: Echo (test)
 - `10`: Login (authentication)
 - `201`: Create room
-- `210`: Fetch room for user
+- `202`: Join room by code (adds session to room subscription map)
+- `203`: Leave room (removes membership)
+- `210`: List rooms for authenticated user
+- `211`: Find public rooms (search by name or return 5 random)
+- `301`: Send message (persists to Supabase, broadcasts on 302)
+- `302`: Broadcasted message delivery to room subscribers
+- `310`: Fetch messages (auto-subscribes session to room for broadcasts)
+- `501`: Create song
+- `510`: List songs for a room
+- `511`: Update song (title/bpm/steps/beats_per_measure/scale/start_pitch/octave_range)
+- `601`: Create note
+- `602`: Delete note
+- `603`: Broadcast note to room subscribers
+- `610`: List notes for a song
+- `604`: Create track
+- `605`: Delete track
+- `606`: Broadcast track updates
+- `701`: Create community post
+- `702`: Delete community post
+- `710`: List community posts
+- `711`: Update community post
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).
