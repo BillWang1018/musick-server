@@ -204,6 +204,7 @@ Current routes:
 - `201`: Create room
 - `202`: Join room by code (adds session to room subscription map)
 - `210`: List rooms for authenticated user
+- `211`: Find public rooms (search by name or return 5 random)
 - `301`: Send message (persists to Supabase, broadcasts on 302)
 - `302`: Broadcasted message delivery to room subscribers
 - `310`: Fetch messages (auto-subscribes session to room for broadcasts)

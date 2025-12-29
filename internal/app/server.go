@@ -52,6 +52,7 @@ func registerRoutes(s *easytcp.Server) {
 
 	// Route 201: create room.
 	// Route 210: list rooms.
+	// Route 211: find public rooms.
 	routes.RegisterRoomRoutes(s)
 
 	// Route 202: join room by code.
