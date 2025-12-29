@@ -186,7 +186,7 @@ func handleFindPublicRooms(ctx easytcp.Context) {
 		return
 	}
 
-	rooms, err := services.FindPublicRooms(findReq.Name)
+	rooms, err := services.FindPublicRooms(findReq.Name, findReq.UserID)
 	if err != nil {
 		log.Printf("failed to find public rooms: %v", err)
 		sendFindPublicRoomsError(ctx, "failed to find public rooms")

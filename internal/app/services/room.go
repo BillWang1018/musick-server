@@ -122,8 +122,18 @@ func ListRoomsByUser(userID string) ([]Room, error) {
 
 // FindPublicRooms returns public rooms filtered by title if provided.
 // When no title is provided, it fetches a set of recent public rooms and picks up to five at random.
-func FindPublicRooms(name string) ([]Room, error) {
+// Rooms the user is already a member of are excluded client-side after fetch.
+func FindPublicRooms(name string, userID string) ([]Room, error) {
 	loadEnv()
+
+	joined, err := ListRoomsByUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user rooms: %w", err)
+	}
+	joinedIDs := make(map[string]struct{}, len(joined))
+	for _, r := range joined {
+		joinedIDs[r.ID] = struct{}{}
+	}
 
 	q := url.Values{}
 	q.Set("select", "id,code,owner_id,title,is_private,created_at")
@@ -168,6 +178,9 @@ func FindPublicRooms(name string) ([]Room, error) {
 
 	rooms := make([]Room, 0, len(rows))
 	for _, r := range rows {
+		if _, exists := joinedIDs[r.ID]; exists {
+			continue
+		}
 		rooms = append(rooms, Room{
 			ID:        r.ID,
 			Code:      r.Code,

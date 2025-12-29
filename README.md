@@ -203,6 +203,7 @@ Current routes:
 - `10`: Login (authentication)
 - `201`: Create room
 - `202`: Join room by code (adds session to room subscription map)
+- `203`: Leave room (removes membership)
 - `210`: List rooms for authenticated user
 - `211`: Find public rooms (search by name or return 5 random)
 - `301`: Send message (persists to Supabase, broadcasts on 302)
@@ -218,5 +219,8 @@ Current routes:
 - `604`: Create track
 - `605`: Delete track
 - `606`: Broadcast track updates
+- `701`: Create community post
+- `702`: Delete community post
+- `711`: Update community post
 
 Plan your ID scheme (e.g., 1xxx = auth, 2xxx = chat, 3xxx = presence).
