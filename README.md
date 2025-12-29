@@ -8,6 +8,7 @@ A TCP-based chat server built with [easytcp](https://github.com/DarthPestilane/e
 - Added song endpoints: 501 create song, 510 list songs for a room.
 - Added note endpoints: 601 create note, 602 delete note, 603 broadcast note changes to room collaborators, 610 list notes for a song.
 - Added track endpoints: 604 create track, 605 delete track, 606 broadcast track changes.
+- Song settings expanded: beats per measure, scale (major/minor), start pitch (MIDI), octave range with defaults (4/major/24/2) and updateable via route 511.
 
 ## Project Structure
 
@@ -208,7 +209,7 @@ Current routes:
 - `310`: Fetch messages (auto-subscribes session to room for broadcasts)
 - `501`: Create song
 - `510`: List songs for a room
-- `511`: Update song (title/bpm/steps)
+- `511`: Update song (title/bpm/steps/beats_per_measure/scale/start_pitch/octave_range)
 - `601`: Create note
 - `602`: Delete note
 - `603`: Broadcast note to room subscribers
