@@ -16,7 +16,16 @@ type Server struct {
 
 // New creates a configured server and registers all routes.
 func New() *Server {
-	srv := easytcp.NewServer(&easytcp.ServerOption{Packer: easytcp.NewDefaultPacker()})
+	// 1. 建立 DefaultPacker 實例
+	packer := easytcp.NewDefaultPacker()
+
+	// 2. 關鍵修正：將最大封包限制調大至 10MB (預設可能太小導致斷線)
+	packer.MaxDataSize = 10 * 1024 * 1024
+
+	// 3. 將設定好的 packer 傳入 ServerOption
+	srv := easytcp.NewServer(&easytcp.ServerOption{
+		Packer: packer,
+	})
 
 	// Log when clients connect/disconnect.
 	srv.OnSessionCreate = func(sess easytcp.Session) {
@@ -42,23 +51,15 @@ func (s *Server) Run(addr string) error {
 }
 
 // registerRoutes wires all message handlers.
-
 func registerRoutes(s *easytcp.Server) {
-	// Route 1: echo request body back to the sender.
 	routes.RegisterEchoRoutes(s)
-
-	// Route 10: authenticate user via Supabase JWT.
 	routes.RegisterAuthRoutes(s)
 
 	// Route 201: create room.
 	// Route 210: list rooms.
 	// Route 211: find public rooms.
 	routes.RegisterRoomRoutes(s)
-
-	// Route 202: join room by code.
 	routes.RegisterJoinRoomRoutes(s)
-
-	// Route 301: post message to Supabase.
 	routes.RegisterMessageRoutes(s)
 
 	// Route 501: create song; 510: list songs; 511: update song.
@@ -72,4 +73,5 @@ func registerRoutes(s *easytcp.Server) {
 
 	// Route 701: create post; 702: delete post; 710: list posts; 711: update post.
 	routes.RegisterCommunityRoutes(s)
+	routes.RegisterShazamRoutes(s)
 }

@@ -33,7 +33,6 @@ musick-server/
         │   └── track.go        # Create/delete/broadcast tracks (604, 605, 606)
         └── services/           # Business logic & external integrations
             ├── session.go      # Session management (user state)
-            ├── roomsubs.go     # Room subscription tracking for broadcasts
             ├── tokenauth.go    # Supabase token verification (JWT)
             ├── room.go         # Supabase room creation helper
             ├── join_room.go    # Supabase room lookup/join helper
